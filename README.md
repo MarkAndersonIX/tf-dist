@@ -15,6 +15,9 @@ python build_image_data.py --train_directory=train/ --validation_directory=val/ 
 ```
 trainer.py uses the training shards created as the input data.
 
+The dataset used with this script can be found here:
+* [Distracted Driver TFRecord Dataset](https://drive.google.com/open?id=1FYrVAszEFMNTUdObK8SrKOqM8bwVxSPl)
+
 ## Generate Scripts
 We'll need shell scripts which can be qsubbed for each node we allocate for the job.  Run buildscripts.sh to generate the ps and worker scripts and the trainer.sh script which will qsub them. trainer.sh is called to allocate nodes and start training.
 To generate scripts for 1 ps server and 4 worker nodes, you would run the command

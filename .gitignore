@@ -1,3 +1,5 @@
 #ignore train and validation TFRecord files (over max size)
 train-*
 validation-*
+#ignore compressed files 
+*.tar.gz
