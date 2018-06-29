@@ -1,0 +1,3 @@
+#ignore train and validation TFRecord files (over max size)
+train-*
+validation-*
