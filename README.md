@@ -24,6 +24,21 @@ buildscripts.sh 1 4
 trainer.py reads from tf records the image and label in batches of BATCH_SIZE and runs them through a 5 layer CNN (3c2d)
 Shell scripts are used to qsub nodes and train on cluster. scripts put their ids into a nodes file which is used to call trainer.py with the node information.
 
+## Run Training
+After the node scripts have been generated, you can run training by running
+```
+./trainer.sh
+```
+Nodes will begin being allocated.  Use qstat to check if nodes are in running state.
+To stop training and cleanup nodes run
+```
+./delnodes.sh
+```
+To clear the output and error directories run
+```
+./clearout.sh
+```
+
 ## Remote Tensorboard Setup
 To use tensorboard, qsub tensorboard.sh which will open a tensorboard instance using logdir=logs.  open a local terminal and run
 ```
