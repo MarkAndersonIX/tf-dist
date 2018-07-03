@@ -4,11 +4,11 @@
 mkdir -p error
 mkdir -p output
 declare -a jobs=(
-"ps0.sh"
-"wk0.sh"
-"wk1.sh"
-"wk2.sh"
-"wk3.sh"
+"_ps0.sh"
+"_wk0.sh"
+"_wk1.sh"
+"_wk2.sh"
+"_wk3.sh"
 )
 #output the jobcount to a file
 echo "nodecount:" ${#jobs[@]} >> nodes

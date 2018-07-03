@@ -1,8 +1,12 @@
-#get numbers
+#set error for undefined variable expansion
+set -u
+#arg parsing: #ps #wk and training script name
 pscount=$1
 wkcount=$2
-#make list of nodes
-#loop over list to generate scripts
+train_script=$3
+#filenames for ps and worker scripts
+psname=_ps
+wkname=_wk
 #create trainer.sh
 > trainer.sh
 echo '
@@ -11,8 +15,8 @@ echo '
 mkdir -p error
 mkdir -p output
 declare -a jobs=(' >> trainer.sh
-	for((i=0;i<$pscount;i+=1)); do echo '"ps'${i}'.sh"' >> trainer.sh ;done;
-	for((i=0;i<$wkcount;i+=1)); do echo '"wk'${i}'.sh"' >> trainer.sh ;done; echo ')
+	for((i=0;i<$pscount;i+=1)); do echo '"'${psname}${i}'.sh"' >> trainer.sh ;done;
+	for((i=0;i<$wkcount;i+=1)); do echo '"'${wkname}${i}'.sh"' >> trainer.sh ;done; echo ')
 #output the jobcount to a file
 echo "nodecount:" ${#jobs[@]} >> nodes
 nodecount=${#jobs[@]}
@@ -33,7 +37,7 @@ echo "all nodes allocated."' >> trainer.sh
 #create ps scripts
 for ((i=0;i<$pscount;i+=1))
 do
-> ps${i}.sh
+> ${psname}${i}.sh
 echo -n '#PBS -l walltime=24:00:00
 #PBS -o output/ps'${i}'-${PBS_JOBID}-o.txt
 #PBS -e error/ps'${i}'-${PBS_JOBID}-e.txt
@@ -59,20 +63,20 @@ wkhosts=`join , ${wkhosts[@]/%/:2222}`
 echo $pshosts
 echo $wkhosts
 
-eval "python trainer.py \
+eval "python '$train_script' \
      --ps_hosts=$pshosts \
      --worker_hosts=$wkhosts \
      --job_name=ps \
      --task_index='${i}'"
 
-' >> ps${i}.sh
+' >> ${psname}${i}.sh
 #write extra line to file!
 done
 
 #create wk scripts
 for ((i=0;i<$wkcount;i+=1))
 do
-> wk${i}.sh
+> ${wkname}${i}.sh
 echo -n '#PBS -l walltime=24:00:00
 #PBS -o output/wk'${i}'-${PBS_JOBID}-o.txt
 #PBS -e error/wk'${i}'-${PBS_JOBID}-e.txt
@@ -98,13 +102,13 @@ wkhosts=`join , ${wkhosts[@]/%/:2222}`
 echo $pshosts
 echo $wkhosts
 
-eval "python trainer.py \
+eval "python '$train_script' \
      --ps_hosts=$pshosts \
      --worker_hosts=$wkhosts \
      --job_name=worker \
      --task_index='${i}'"
 
-' >> wk${i}.sh
+' >> ${wkname}${i}.sh
 #write extra line to file!
 done
 chmod +x *.sh

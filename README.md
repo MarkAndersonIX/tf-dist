@@ -20,9 +20,9 @@ The dataset used with this script can be found here:
 
 ## Generate Scripts
 We'll need shell scripts which can be qsubbed for each node we allocate for the job.  Run buildscripts.sh to generate the ps and worker scripts and the trainer.sh script which will qsub them. trainer.sh is called to allocate nodes and start training.
-To generate scripts for 1 ps server and 4 worker nodes, you would run the command
+To generate scripts for 1 ps server and 4 worker nodes, and the model defined at trainer.py, you would run the command
 ```
-buildscripts.sh 1 4
+buildscripts.sh 1 4 trainer.py
 ```
 trainer.py reads from tf records the image and label in batches of BATCH_SIZE and runs them through a 5 layer CNN (3c2d)
 Shell scripts are used to qsub nodes and train on cluster. scripts put their ids into a nodes file which is used to call trainer.py with the node information.
