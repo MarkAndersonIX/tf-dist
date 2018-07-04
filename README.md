@@ -20,11 +20,14 @@ The dataset used with this script can be found here:
 
 ## Generate Scripts
 We'll need shell scripts which can be qsubbed for each node we allocate for the job.  Run buildscripts.sh to generate the ps and worker scripts and the trainer.sh script which will qsub them. trainer.sh is called to allocate nodes and start training.
-To generate scripts for 1 ps server and 4 worker nodes, and the model defined at trainer.py, you would run the command
+To generate scripts for 1 ps server and 4 worker nodes, and the model defined at trainer.py (use your defined model here), you would run the command
 ```
 buildscripts.sh 1 4 trainer.py
 ```
-trainer.py reads from tf records the image and label in batches of BATCH_SIZE and runs them through a 5 layer CNN (3c2d)
+*trainer.py reads from tf records the image and label in batches of BATCH_SIZE and runs them through a 5 layer CNN (3c2d)
+	NOTE: currently trainer.py is incompatible with tensorboard.
+*mnist_trainer.py runs mnist training using a 3 layer CNN (2c1d) and logs to tensorboard.
+
 Shell scripts are used to qsub nodes and train on cluster. scripts put their ids into a nodes file which is used to call trainer.py with the node information.
 
 ## Run Training
@@ -50,6 +53,6 @@ ssh -L localhost:16006:c002-n001:6006 colfaxc002
 where c002-n001 can be replaced with the hostname of the node allocated for the job. open a browser and enter localhost:16006.
 
 ## Running Inference and Validation
-Inference can be run by qsubbing infer.sh.
+Inference for TFRecord trainer.py can be run by qsubbing infer.sh.
 Validation will be added in a future commit
 

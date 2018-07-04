@@ -85,23 +85,26 @@ def main(_):
 
             # Build model...
             # input placeholders
-            x = tf.placeholder(tf.float32, [None, input_height * input_width])
-            y = tf.placeholder(tf.float32, [None, n_classes])
-            keep_prob = tf.placeholder(tf.float32)
+            with tf.variable_scope('input_data'):
+                x = tf.placeholder(tf.float32, [None, input_height * input_width])
+            with tf.variable_scope('input_labels'):
+                y = tf.placeholder(tf.float32, [None, n_classes])
+            with tf.variable_scope('keep_prob'):
+                keep_prob = tf.placeholder(tf.float32)
 
             # define weights and biases
             weights = {
-                'wc1': tf.Variable(tf.random_normal([filter_height, filter_width, depth_in, depth_out1])),
-                'wc2': tf.Variable(tf.random_normal([filter_height, filter_width, depth_out1, depth_out2])),
+                'wc1': tf.Variable(tf.random_normal([filter_height, filter_width, depth_in, depth_out1]),name='w_c1'),
+                'wc2': tf.Variable(tf.random_normal([filter_height, filter_width, depth_out1, depth_out2]),name='w_c2'),
                 'wd1': tf.Variable(
-                    tf.random_normal([int((input_height / 4) * (input_width / 4) * depth_out2), dense_ct])),
-                'out': tf.Variable(tf.random_normal([dense_ct, n_classes]))
+                    tf.random_normal([int((input_height / 4) * (input_width / 4) * depth_out2), dense_ct]),name='w_d'),
+                'out': tf.Variable(tf.random_normal([dense_ct, n_classes]),name='w_out')
             }
             biases = {
-                'bc1': tf.Variable(tf.random_normal([depth_out1])),
-                'bc2': tf.Variable(tf.random_normal([depth_out2])),
-                'bd1': tf.Variable(tf.random_normal([dense_ct])),
-                'out': tf.Variable(tf.random_normal([n_classes]))
+                'bc1': tf.Variable(tf.random_normal([depth_out1]),name='b_c1'),
+                'bc2': tf.Variable(tf.random_normal([depth_out2]),name='b_c2'),
+                'bd1': tf.Variable(tf.random_normal([dense_ct]),name='b_d'),
+                'out': tf.Variable(tf.random_normal([n_classes]),name='b_out')
             }
 
             pred = conv_net(x, weights, biases, keep_prob)
@@ -126,17 +129,29 @@ def main(_):
             #initialize and pass summary op to session using scaffold.
             scaffold = tf.train.Scaffold(init_op=init, init_feed_dict={x:np.zeros(shape=[1,28*28]),y:np.zeros(shape=[1,n_classes])},
                                          summary_op=merged)
+
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
+        #config to set low level processor flags, comment to use defaults.
+        config = tf.ConfigProto(intra_op_parallelism_threads=21, inter_op_parallelism_threads=5,
+                                allow_soft_placement=True) #, device_count={'CPU': 24})
         with tf.train.MonitoredTrainingSession(master=server.target,
                                                is_chief=(FLAGS.task_index == 0),
                                                checkpoint_dir=FLAGS.log_dir,
                                                hooks=hooks,
-                                               # save_summaries_secs=60,
+                                               config=config,
                                                save_checkpoint_secs=60,
                                                scaffold=scaffold
                                                ) as mon_sess:
+            #low level flags, comment to use defaults.
+            # os.environ['OMP_DYNAMIC']='.TRUE.'
+            os.environ['OMP_NUM_THREADS'] = '64'
+            os.environ['KMP_BLOCKTIME'] = '0'
+            os.environ['KMP_SETTINGS'] = '0'
+            os.environ['KMP_AFFINITY'] = 'granularity=fine,noverbose,compact,1,0'
+
+            #training loop
             while not mon_sess.should_stop():
                 # Run a training step asynchronously.
                 # See `tf.train.SyncReplicasOptimizer` for additional details on how to

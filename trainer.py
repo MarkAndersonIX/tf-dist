@@ -135,27 +135,24 @@ def main(_):
                 keep_prob = tf.placeholder(tf.float32)
 
             # define weights and biases
-            with tf.name_scope('weights'):
-                weights = {
-                    'wc1': tf.Variable(tf.random_normal([filter_height + 2, filter_width + 2, depth_in, depth_out1])),
-                    'wc2': tf.Variable(tf.random_normal([filter_height + 2, filter_width + 2, depth_out1, depth_out2])),
-                    'wc3': tf.Variable(tf.random_normal([filter_height + 4, filter_width + 4, depth_out2, depth_out3])),
-                    'wd1': tf.Variable(
-                        tf.random_normal([int((input_height / 32) * (input_width / 32) * depth_out3), dense_ct])),
-                    'wd2': tf.Variable(tf.random_normal([dense_ct, dense_ct])),
-                    'out': tf.Variable(tf.random_normal([dense_ct, n_classes]))
-                }
-            with tf.name_scope('biases'):
-                biases = {
-                    'bc1': tf.Variable(tf.random_normal([depth_out1])),
-                    'bc2': tf.Variable(tf.random_normal([depth_out2])),
-                    'bc3': tf.Variable(tf.random_normal([depth_out3])),
-                    'bd1': tf.Variable(tf.random_normal([dense_ct])),
-                    'bd2': tf.Variable(tf.random_normal([dense_ct])),
-                    'out': tf.Variable(tf.random_normal([n_classes]))
-                }
-            with tf.name_scope('prediction'):
-                pred = conv_net(x, weights, biases, keep_prob)
+            weights = {
+                'wc1': tf.Variable(tf.random_normal([filter_height + 2, filter_width + 2, depth_in, depth_out1])),
+                'wc2': tf.Variable(tf.random_normal([filter_height + 2, filter_width + 2, depth_out1, depth_out2])),
+                'wc3': tf.Variable(tf.random_normal([filter_height + 4, filter_width + 4, depth_out2, depth_out3])),
+                'wd1': tf.Variable(
+                    tf.random_normal([int((input_height / 32) * (input_width / 32) * depth_out3), dense_ct])),
+                'wd2': tf.Variable(tf.random_normal([dense_ct, dense_ct])),
+                'out': tf.Variable(tf.random_normal([dense_ct, n_classes]))
+            }
+            biases = {
+                'bc1': tf.Variable(tf.random_normal([depth_out1])),
+                'bc2': tf.Variable(tf.random_normal([depth_out2])),
+                'bc3': tf.Variable(tf.random_normal([depth_out3])),
+                'bd1': tf.Variable(tf.random_normal([dense_ct])),
+                'bd2': tf.Variable(tf.random_normal([dense_ct])),
+                'out': tf.Variable(tf.random_normal([n_classes]))
+            }
+            pred = conv_net(x, weights, biases, keep_prob)
             #create or get global step
             global_step = tf.train.get_or_create_global_step()
             # define loss function and optimizer
@@ -173,14 +170,16 @@ def main(_):
             hooks = [
                 tf.train.StopAtStepHook(last_step=100000),
             ]
-            # cnn dataset (May need to factor this upward)
             iter = dataset_input_fn()
-            init = tf.global_variables_initializer()
+
+            #currently crashes, TODO:initialize placeholders before eval.
+            #init = tf.global_variables_initializer()
             #scaffold will initialize summaries and pass summary op
-            scaffold = tf.train.Scaffold(init_op=init,
-                                         init_feed_dict={x: np.zeros(shape=[1,input_height,input_width,3]),
-                                                         y: np.zeros(shape=[1,n_classes])},
-                                         summary_op=merged)
+            #scaffold = tf.train.Scaffold(init_op=init,
+            #                             init_feed_dict={x:np.zeros(shape=[1,input_height,input_width,3]),
+            #                                             y:np.zeros(shape=[1,n_classes]),
+            #                                             keep_prob:1.0},
+            #                             summary_op=merged)
 
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
@@ -191,7 +190,7 @@ def main(_):
                                                hooks=hooks,
                                                #save_summaries_secs=60,
                                                save_checkpoint_secs=60,
-                                               scaffold=scaffold
+                                               #scaffold=scaffold
                                                ) as mon_sess:
             while not mon_sess.should_stop():
                 # Run a training step asynchronously.
