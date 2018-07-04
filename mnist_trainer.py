@@ -117,14 +117,14 @@ def main(_):
             with tf.name_scope('accuracy'):
                 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
                 tf.summary.scalar('accuracy', accuracy)
-            # initialization op
-            init = tf.global_variables_initializer()
+            #merge all summaries, to be added to scaffold
             merged = tf.summary.merge_all()
             hooks = [
-                tf.train.StopAtStepHook(last_step=100000),
-                #tf.train.SummarySaverHook(save_steps=10, output_dir=FLAGS.log_dir)
+                tf.train.StopAtStepHook(last_step=10000),
             ]
-            scaffold = tf.train.Scaffold(init_op=merged, init_feed_dict={x:np.zeros(shape=[1,28*28]),y:np.zeros(shape=[1,n_classes])},
+            init = tf.global_variables_initializer()
+            #initialize and pass summary op to session using scaffold.
+            scaffold = tf.train.Scaffold(init_op=init, init_feed_dict={x:np.zeros(shape=[1,28*28]),y:np.zeros(shape=[1,n_classes])},
                                          summary_op=merged)
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
