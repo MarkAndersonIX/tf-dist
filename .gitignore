@@ -1,5 +1,17 @@
 #ignore train and validation TFRecord files (over max size)
 train-*
 validation-*
+
 #ignore compressed files 
 *.tar.gz
+
+#downloaded MNIST_data folder
+MNIST_data/
+
+#output dirs
+output/
+error/
+
+#generated scripts
+_wk*
+_ps*

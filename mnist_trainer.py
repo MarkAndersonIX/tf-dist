@@ -3,16 +3,17 @@ import sys
 import os
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 import numpy as np
 
 FLAGS = None
 
-#constants used for training
+# constants used for training
 learning_rate = 0.005
 epochs = 20
 batch_size = 256
-num_batches = int(mnist.train.num_examples/batch_size)
+num_batches = int(mnist.train.num_examples / batch_size)
 input_height = 28
 input_width = 28
 n_classes = 10
@@ -25,32 +26,39 @@ depth_out1 = 64
 depth_out2 = 128
 dense_ct = 1024
 
-def conv2d(x,W,b,strides=2):
+
+def conv2d(x, W, b, strides=1):
     with tf.name_scope('convolution'):
-        x = tf.nn.conv2d(x,W,strides=[1,strides,strides,1],padding='SAME')
-        x = tf.nn.bias_add(x,b)
+        x = tf.nn.conv2d(x, W, strides=[1, strides, strides, 1], padding='SAME')
+        x = tf.nn.bias_add(x, b)
         return tf.nn.relu(x)
-def maxpool2d(x,stride=2):
+
+
+def maxpool2d(x, stride=2):
     with tf.name_scope('max_pool'):
-        return tf.nn.max_pool(x,ksize=[1,stride,stride,1],strides=[1,stride,stride,1],padding='SAME')
-def conv_net(x,weights,biases,dropout):
-    #convolution
+        return tf.nn.max_pool(x, ksize=[1, stride, stride, 1], strides=[1, stride, stride, 1], padding='SAME')
+
+
+def conv_net(x, weights, biases, dropout):
+    x = tf.reshape(x, shape=[-1, input_height, input_width, 1])
+    # convolution
     conv1 = conv2d(x, weights['wc1'], biases['bc1'])
     conv1 = maxpool2d(conv1, stride=2)
-    #convolution
+    # convolution
     conv2 = conv2d(conv1, weights['wc2'], biases['bc2'])
     conv2 = maxpool2d(conv2, stride=2)
-    #fully connected
+    # fully connected
     with tf.name_scope('fully_connected1'):
-        fc1 = tf.reshape(conv2,[-1,weights['wd1'].get_shape().as_list()[0]])
-        fc1 = tf.add(tf.matmul(fc1,weights['wd1']),biases['bd1'])
+        fc1 = tf.reshape(conv2, [-1, weights['wd1'].get_shape().as_list()[0]])
+        fc1 = tf.add(tf.matmul(fc1, weights['wd1']), biases['bd1'])
         fc1 = tf.nn.relu(fc1)
-        #apply dropout
-        fc1 = tf.nn.dropout(fc1,dropout)
-    #output prediction
+        # apply dropout
+        fc1 = tf.nn.dropout(fc1, dropout)
+    # output prediction
     with tf.name_scope('output'):
-        out = tf.add(tf.matmul(fc1,weights['out']),biases['out'])
+        out = tf.add(tf.matmul(fc1, weights['out']), biases['out'])
     return out
+
 
 def main(_):
     print(FLAGS.job_name, FLAGS.task_index)
@@ -77,7 +85,7 @@ def main(_):
 
             # Build model...
             # input placeholders
-            x = tf.placeholder(tf.float32, [None, input_height, input_width, depth_in])
+            x = tf.placeholder(tf.float32, [None, input_height * input_width])
             y = tf.placeholder(tf.float32, [None, n_classes])
             keep_prob = tf.placeholder(tf.float32)
 
@@ -95,28 +103,29 @@ def main(_):
                 'bd1': tf.Variable(tf.random_normal([dense_ct])),
                 'out': tf.Variable(tf.random_normal([n_classes]))
             }
-            with tf.name_scope('prediction'):
-                pred = conv_net(x, weights, biases, keep_prob)
-            #create or get global step
+
+            pred = conv_net(x, weights, biases, keep_prob)
+            # create or get global step
             global_step = tf.train.get_or_create_global_step()
             # define loss function and optimizer
             with tf.name_scope('cost'):
                 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
+                tf.summary.scalar('cost', cost)
             train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
             # evaluate model
             correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
             with tf.name_scope('accuracy'):
                 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-                #tf.summary.tensor_summary('accuracy', accuracy)
+                tf.summary.scalar('accuracy', accuracy)
             # initialization op
             init = tf.global_variables_initializer()
-
-            #merged = tf.summary.merge_all()
+            merged = tf.summary.merge_all()
             hooks = [
                 tf.train.StopAtStepHook(last_step=100000),
-                #tf.train.SummarySaverHook(save_steps=10,output_dir=FLAGS.log_dir, summary_op=merged)
+                #tf.train.SummarySaverHook(save_steps=10, output_dir=FLAGS.log_dir)
             ]
-
+            scaffold = tf.train.Scaffold(init_op=merged, init_feed_dict={x:np.zeros(shape=[1,28*28]),y:np.zeros(shape=[1,n_classes])},
+                                         summary_op=merged)
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
@@ -124,9 +133,9 @@ def main(_):
                                                is_chief=(FLAGS.task_index == 0),
                                                checkpoint_dir=FLAGS.log_dir,
                                                hooks=hooks,
-                                               save_summaries_secs=60,
-                                               save_checkpoint_secs=60
-                                               #scaffold=scaffold
+                                               # save_summaries_secs=60,
+                                               save_checkpoint_secs=60,
+                                               scaffold=scaffold
                                                ) as mon_sess:
             while not mon_sess.should_stop():
                 # Run a training step asynchronously.
@@ -134,10 +143,12 @@ def main(_):
                 # perform *synchronous* training.
                 # mon_sess.run handles AbortedError in case of preempted PS.
                 ### Modified here ###
-                batch_x,batch_y = mnist.train.next_batch(batch_size)
+                batch_x, batch_y = mnist.train.next_batch(batch_size)
                 mon_sess.run(train_op, feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
-                cost_summary, acc_summary = mon_sess.run([cost, accuracy], feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
+                cost_summary, acc_summary = mon_sess.run([cost, accuracy],
+                                                         feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
                 print('cost: %s acc: %s' % (cost_summary, acc_summary))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -176,5 +187,6 @@ if __name__ == "__main__":
     )
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+
 
 
