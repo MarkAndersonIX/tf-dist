@@ -24,9 +24,9 @@ To generate scripts for 1 ps server and 4 worker nodes, and the model defined at
 ```
 buildscripts.sh 1 4 trainer.py
 ```
-*trainer.py reads from tf records the image and label in batches of BATCH_SIZE and runs them through a 5 layer CNN (3c2d)
+* trainer.py reads from tf records the image and label in batches of BATCH_SIZE and runs them through a 5 layer CNN (3c2d)
 	NOTE: currently trainer.py is incompatible with tensorboard.
-*mnist_trainer.py runs mnist training using a 3 layer CNN (2c1d) and logs to tensorboard.
+* mnist_trainer.py runs mnist training using a 3 layer CNN (2c1d) and logs to tensorboard.
 
 Shell scripts are used to qsub nodes and train on cluster. scripts put their ids into a nodes file which is used to call trainer.py with the node information.
 

@@ -7,6 +7,7 @@ train_script=$3
 #filenames for ps and worker scripts
 psname=_ps
 wkname=_wk
+walltime=23:00:00
 #create trainer.sh
 > trainer.sh
 echo '
@@ -38,7 +39,7 @@ echo "all nodes allocated."' >> trainer.sh
 for ((i=0;i<$pscount;i+=1))
 do
 > ${psname}${i}.sh
-echo -n '#PBS -l walltime=24:00:00
+echo -n '#PBS -l walltime='${walltime}'
 #PBS -o output/ps'${i}'-${PBS_JOBID}-o.txt
 #PBS -e error/ps'${i}'-${PBS_JOBID}-e.txt
 cd $PBS_O_WORKDIR
@@ -77,7 +78,7 @@ done
 for ((i=0;i<$wkcount;i+=1))
 do
 > ${wkname}${i}.sh
-echo -n '#PBS -l walltime=24:00:00
+echo -n '#PBS -l walltime='${walltime}'
 #PBS -o output/wk'${i}'-${PBS_JOBID}-o.txt
 #PBS -e error/wk'${i}'-${PBS_JOBID}-e.txt
 cd $PBS_O_WORKDIR

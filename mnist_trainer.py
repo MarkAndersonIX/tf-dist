@@ -106,7 +106,13 @@ def main(_):
                 'bd1': tf.Variable(tf.random_normal([dense_ct]),name='b_d'),
                 'out': tf.Variable(tf.random_normal([n_classes]),name='b_out')
             }
-
+            #log histograms of weights and biases to tensorboard
+            for weight in weights:
+                with tf.variable_scope(weight):
+                    tf.summary.histogram(weight, weights[weight])
+            for bias in biases:
+                with tf.variable_scope(bias):
+                    tf.summary.histogram(bias, biases[bias])
             pred = conv_net(x, weights, biases, keep_prob)
             # create or get global step
             global_step = tf.train.get_or_create_global_step()
@@ -120,6 +126,7 @@ def main(_):
             with tf.name_scope('accuracy'):
                 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
                 tf.summary.scalar('accuracy', accuracy)
+
             #merge all summaries, to be added to scaffold
             merged = tf.summary.merge_all()
             hooks = [

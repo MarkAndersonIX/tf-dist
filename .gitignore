@@ -13,6 +13,8 @@ output/
 error/
 logs/
 
-#generated scripts
+#generated files
 _wk*
 _ps*
+nodes
+joblist
