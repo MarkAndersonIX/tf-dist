@@ -12,7 +12,11 @@ FLAGS = None
 # constants used for training
 learning_rate = 0.005
 epochs = 20
+<<<<<<< HEAD
 batch_size = 512
+=======
+batch_size = 256
+>>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
 num_batches = int(mnist.train.num_examples / batch_size)
 input_height = 28
 input_width = 28
@@ -130,7 +134,11 @@ def main(_):
             #merge all summaries, to be added to scaffold
             merged = tf.summary.merge_all()
             hooks = [
+<<<<<<< HEAD
                 tf.train.StopAtStepHook(last_step=5000)
+=======
+                tf.train.StopAtStepHook(last_step=10000),
+>>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
             ]
             init = tf.global_variables_initializer()
             #initialize and pass summary op to session using scaffold.
@@ -148,7 +156,11 @@ def main(_):
                                                checkpoint_dir=FLAGS.log_dir,
                                                hooks=hooks,
                                                config=config,
+<<<<<<< HEAD
                                                save_checkpoint_steps=100,
+=======
+                                               save_checkpoint_secs=60,
+>>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
                                                scaffold=scaffold
                                                ) as mon_sess:
             #low level flags, comment to use defaults.
@@ -166,9 +178,15 @@ def main(_):
                 # mon_sess.run handles AbortedError in case of preempted PS.
                 ### Modified here ###
                 batch_x, batch_y = mnist.train.next_batch(batch_size)
+<<<<<<< HEAD
                 _, cost_summary, acc_summary = mon_sess.run([train_op,cost,accuracy], feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
                 # cost_summary, acc_summary = mon_sess.run([cost, accuracy],
                 #                                          feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
+=======
+                mon_sess.run(train_op, feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
+                cost_summary, acc_summary = mon_sess.run([cost, accuracy],
+                                                         feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
+>>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
                 print('cost: %s acc: %s' % (cost_summary, acc_summary))
 
 

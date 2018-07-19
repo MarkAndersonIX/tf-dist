@@ -171,6 +171,7 @@ def main(_):
                 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
                 tf.summary.tensor_summary('accuracy', accuracy)
 
+            #TODO summaries currently throw an error, commented out merged summary and scaffold until fixed
             #merged = tf.summary.merge_all()
             hooks = [
                 tf.train.StopAtStepHook(last_step=100000),
@@ -179,11 +180,11 @@ def main(_):
 
             init = tf.global_variables_initializer()
             #scaffold will initialize summaries and pass summary op
-            scaffold = tf.train.Scaffold(init_op=init,
-                                        init_feed_dict={x:np.zeros(shape=(1,input_height,input_width,depth_in)),
-                                                        y:np.zeros(shape=(1,n_classes)),
-                                                        keep_prob:1.0},
-                                        summary_op=merged)
+            # scaffold = tf.train.Scaffold(init_op=init,
+            #                             init_feed_dict={x:np.zeros(shape=(1,input_height,input_width,depth_in)),
+            #                                             y:np.zeros(shape=(1,n_classes)),
+            #                                             keep_prob:1.0},
+            #                             summary_op=merged)
 
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
@@ -194,7 +195,7 @@ def main(_):
                                                hooks=hooks,
                                                #save_summaries_secs=60,
                                                save_checkpoint_secs=60,
-                                               scaffold=scaffold
+                                               #scaffold=scaffold
                                                ) as mon_sess:
             while not mon_sess.should_stop():
                 # Run a training step asynchronously.
@@ -249,5 +250,6 @@ if __name__ == "__main__":
     )
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+
 
 
