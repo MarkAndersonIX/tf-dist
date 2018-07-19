@@ -163,13 +163,13 @@ def main(_):
             # define loss function and optimizer
             with tf.name_scope('cost'):
                 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
-                tf.summary.tensor_summary('cost', cost)
+                #tf.summary.tensor_summary('cost', cost)
             train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
             # evaluate model
             correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
             with tf.name_scope('accuracy'):
                 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-                tf.summary.tensor_summary('accuracy', accuracy)
+                #tf.summary.tensor_summary('accuracy', accuracy)
 
             #TODO summaries currently throw an error, commented out merged summary and scaffold until fixed
             #merged = tf.summary.merge_all()
