@@ -40,6 +40,9 @@ def dataset_input_fn(dir=os.getcwd(), prefix='train-', hyperparameters={'trainin
     dataset = dataset.repeat()
     iterator = dataset.make_one_shot_iterator()
 
+    # `features` is a dictionary in which each value is a batch of values for
+    # that feature; `labels` is a batch of labels.
+    #features, labels = iterator.get_next()
     return iterator.get_next() #features, labels
 
 def conv2d(x,W,b,strides=2):
@@ -124,12 +127,9 @@ def main(_):
 
             # Build model...
             # input placeholders
-            with tf.variable_scope('input_data'):
-                x = tf.placeholder(tf.float32, [None, input_height, input_width, depth_in])
-            with tf.variable_scope('input_labels'):
-                y = tf.placeholder(tf.float32, [None, n_classes])
-            with tf.variable_scope('keep_probability'):
-                keep_prob = tf.placeholder(tf.float32)
+            x = tf.placeholder(tf.float32, [None, input_height, input_width, depth_in])
+            y = tf.placeholder(tf.float32, [None, n_classes])
+            keep_prob = tf.placeholder(tf.float32)
 
             # define weights and biases
             weights = {
@@ -149,42 +149,34 @@ def main(_):
                 'bd2': tf.Variable(tf.random_normal([dense_ct])),
                 'out': tf.Variable(tf.random_normal([n_classes]))
             }
-            #log histograms of weights and biases to tensorboard
-            for weight in weights:
-                with tf.variable_scope(weight):
-                    tf.summary.histogram(weight, weights[weight])
-            for bias in biases:
-                with tf.variable_scope(bias):
-                    tf.summary.histogram(bias, biases[bias])
-
-            pred = conv_net(x, weights, biases, keep_prob)
+            with tf.name_scope('prediction'):
+                pred = conv_net(x, weights, biases, keep_prob)
             #create or get global step
             global_step = tf.train.get_or_create_global_step()
             # define loss function and optimizer
             with tf.name_scope('cost'):
                 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
-                #tf.summary.tensor_summary('cost', cost)
+                #tf.summary.tensor_summary('loss', cost)
             train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
             # evaluate model
             correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
             with tf.name_scope('accuracy'):
                 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
                 #tf.summary.tensor_summary('accuracy', accuracy)
+            # initialization op
+            init = tf.global_variables_initializer()
 
-            #TODO summaries currently throw an error, commented out merged summary and scaffold until fixed
             #merged = tf.summary.merge_all()
             hooks = [
                 tf.train.StopAtStepHook(last_step=100000),
+                #tf.train.SummarySaverHook(save_steps=10,output_dir=FLAGS.log_dir, summary_op=merged)
             ]
-            iter = dataset_input_fn()
+        # cnn dataset (May need to factor this upward)
+        iter = dataset_input_fn()
 
-            init = tf.global_variables_initializer()
-            #scaffold will initialize summaries and pass summary op
-            # scaffold = tf.train.Scaffold(init_op=init,
-            #                             init_feed_dict={x:np.zeros(shape=(1,input_height,input_width,depth_in)),
-            #                                             y:np.zeros(shape=(1,n_classes)),
-            #                                             keep_prob:1.0},
-            #                             summary_op=merged)
+        # scaffold = tf.train.Scaffold(init_op=accuracy,
+        #                              init_feed_dict={x: np.zeros([1,480,640,3]) , y: np.zeros([1,11]), keep_prob: 1.0},
+        #                              summary_op=merged)
 
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
@@ -193,10 +185,14 @@ def main(_):
                                                is_chief=(FLAGS.task_index == 0),
                                                checkpoint_dir=FLAGS.log_dir,
                                                hooks=hooks,
-                                               #save_summaries_secs=60,
-                                               save_checkpoint_secs=60,
+                                               save_summaries_secs=300,
+                                               save_checkpoint_secs=300
                                                #scaffold=scaffold
                                                ) as mon_sess:
+            #if worker is chief, set up filewriter to save summaries
+            # if(FLAGS.task_index == 0):
+            #     filewriter = tf.summary.FileWriter(logdir=FLAGS.log_dir)
+
             while not mon_sess.should_stop():
                 # Run a training step asynchronously.
                 # See `tf.train.SyncReplicasOptimizer` for additional details on how to
@@ -204,14 +200,9 @@ def main(_):
                 # mon_sess.run handles AbortedError in case of preempted PS.
                 ### Modified here ###
                 images, labels = mon_sess.run(iter)
-                # images = np.zeros(shape=(1,480,640,3))
-                # labels = np.zeros(shape=(1,n_classes))
-                mon_sess.run(train_op,
-                             feed_dict={x: images, y: labels, keep_prob: dropout})
-                cost, acc = mon_sess.run([cost, accuracy],
-                                         feed_dict={x: images, y: labels, keep_prob: dropout})
-
-                print('cost: %s acc: %s' % (cost, acc))
+                mon_sess.run(train_op, feed_dict={x: images, y: labels, keep_prob: dropout})
+                cost_summary, acc_summary = mon_sess.run([cost, accuracy], feed_dict={x: images, y: labels, keep_prob: dropout})
+                print('cost: %s acc: %s' % (cost_summary, acc_summary))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -250,6 +241,5 @@ if __name__ == "__main__":
     )
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-
 
 

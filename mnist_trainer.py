@@ -12,11 +12,7 @@ FLAGS = None
 # constants used for training
 learning_rate = 0.005
 epochs = 20
-<<<<<<< HEAD
-batch_size = 512
-=======
 batch_size = 256
->>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
 num_batches = int(mnist.train.num_examples / batch_size)
 input_height = 28
 input_width = 28
@@ -134,11 +130,7 @@ def main(_):
             #merge all summaries, to be added to scaffold
             merged = tf.summary.merge_all()
             hooks = [
-<<<<<<< HEAD
-                tf.train.StopAtStepHook(last_step=5000)
-=======
                 tf.train.StopAtStepHook(last_step=10000),
->>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
             ]
             init = tf.global_variables_initializer()
             #initialize and pass summary op to session using scaffold.
@@ -149,23 +141,19 @@ def main(_):
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
         #config to set low level processor flags, comment to use defaults.
-        config = tf.ConfigProto(intra_op_parallelism_threads=21, inter_op_parallelism_threads=5,
+        config = tf.ConfigProto(intra_op_parallelism_threads=25, inter_op_parallelism_threads=2,
                                 allow_soft_placement=True) #, device_count={'CPU': 24})
         with tf.train.MonitoredTrainingSession(master=server.target,
                                                is_chief=(FLAGS.task_index == 0),
                                                checkpoint_dir=FLAGS.log_dir,
                                                hooks=hooks,
                                                config=config,
-<<<<<<< HEAD
-                                               save_checkpoint_steps=100,
-=======
                                                save_checkpoint_secs=60,
->>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
                                                scaffold=scaffold
                                                ) as mon_sess:
             #low level flags, comment to use defaults.
             # os.environ['OMP_DYNAMIC']='.TRUE.'
-            os.environ['OMP_NUM_THREADS'] = '64'
+            os.environ['OMP_NUM_THREADS'] = '20'
             os.environ['KMP_BLOCKTIME'] = '0'
             os.environ['KMP_SETTINGS'] = '0'
             os.environ['KMP_AFFINITY'] = 'granularity=fine,noverbose,compact,1,0'
@@ -178,15 +166,9 @@ def main(_):
                 # mon_sess.run handles AbortedError in case of preempted PS.
                 ### Modified here ###
                 batch_x, batch_y = mnist.train.next_batch(batch_size)
-<<<<<<< HEAD
-                _, cost_summary, acc_summary = mon_sess.run([train_op,cost,accuracy], feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
-                # cost_summary, acc_summary = mon_sess.run([cost, accuracy],
-                #                                          feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
-=======
                 mon_sess.run(train_op, feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
                 cost_summary, acc_summary = mon_sess.run([cost, accuracy],
                                                          feed_dict={x: batch_x, y: batch_y, keep_prob: dropout})
->>>>>>> 5e96603c6bda41a248108634703e377ec4aaa367
                 print('cost: %s acc: %s' % (cost_summary, acc_summary))
 
 
